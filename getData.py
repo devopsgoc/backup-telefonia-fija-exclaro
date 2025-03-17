@@ -104,7 +104,7 @@ def conectar_influxdb():
 def procesar_y_subir_archivos_influxdb(client):
     try:
         puntos = []
-        timestamp_actual = datetime.utcnow().isoformat("T") + "Z"
+        timestamp_actual = datetime.now(timezone.utc).isoformat("T") + "Z"  # Corrección aquí
 
         for archivo in os.listdir(local_path):
             ruta_archivo = os.path.join(local_path, archivo)
