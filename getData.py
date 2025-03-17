@@ -104,8 +104,7 @@ def conectar_influxdb():
 def procesar_y_subir_archivos_influxdb(client):
     try:
         puntos = []
-        timestamp_actual = datetime.now(timezone.utc).isoformat("T") + "Z"  # Corrección aquí
-
+        
         for archivo in os.listdir(local_path):
             ruta_archivo = os.path.join(local_path, archivo)
             if os.path.isfile(ruta_archivo):
@@ -118,9 +117,11 @@ def procesar_y_subir_archivos_influxdb(client):
                             tercera_columna = columnas[2]
                             tercera_columna_value = 1 if tercera_columna == "OK" else 2 if tercera_columna == "NOK" else 0
 
+                            timestamp_actual = int(datetime.now(timezone.utc).timestamp() * 1e9)  # Epoch en nanosegundos
+
                             punto = {
                                 "measurement": "backup_data",
-                                "time": timestamp_actual,
+                                "time": timestamp_actual,  # Epoch nanosegundos
                                 "fields": {
                                     "campo2": segunda_columna,
                                     "campo3": tercera_columna_value
