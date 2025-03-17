@@ -101,11 +101,7 @@ def conectar_influxdb():
         logging.error(f"Error al conectar a InfluxDB: {e}")
         raise
 
-import os
-import logging
-from datetime import datetime, timezone
-
-def procesar_y_subir_archivos_influxdb(client, local_path):
+def procesar_y_subir_archivos_influxdb(client):
     try:
         puntos = []
         
