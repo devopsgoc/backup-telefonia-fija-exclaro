@@ -101,30 +101,33 @@ def conectar_influxdb():
         logging.error(f"Error al conectar a InfluxDB: {e}")
         raise
 
+import os
+import logging
+from datetime import datetime, timezone
+
 def procesar_y_subir_archivos_influxdb(client):
     try:
         puntos = []
-        
+        timestamp_actual = int(datetime.now(timezone.utc).timestamp() * 1e9)  
         for archivo in os.listdir(local_path):
             ruta_archivo = os.path.join(local_path, archivo)
             if os.path.isfile(ruta_archivo):
                 logging.info(f"Procesando archivo: {archivo}")
+
                 with open(ruta_archivo, 'r') as f:
                     for linea in f:
                         columnas = linea.strip().split(";")
                         if len(columnas) >= 3:
-                            segunda_columna = columnas[1]
-                            tercera_columna = columnas[2]
-                            tercera_columna_value = 1 if tercera_columna == "OK" else 2 if tercera_columna == "NOK" else 0
-
-                            timestamp_actual = int(datetime.now(timezone.utc).timestamp() * 1e9)  # Epoch en nanosegundos
+                            kpi = columnas[1]
+                            estado_raw = columnas[2]
+                            estado = 1 if estado_raw == "OK" else 2 if estado_raw == "NOK" else 0
 
                             punto = {
                                 "measurement": "backup_data",
-                                "time": timestamp_actual,  # Epoch nanosegundos
+                                "time": timestamp_actual,  # 🔹 Todas las inserciones usan el mismo timestamp
                                 "fields": {
-                                    "campo2": segunda_columna,
-                                    "campo3": tercera_columna_value
+                                    "kpi": kpi,
+                                    "estado": estado
                                 }
                             }
                             puntos.append(punto)
@@ -132,10 +135,9 @@ def procesar_y_subir_archivos_influxdb(client):
                 logging.info(f"Archivo {archivo} procesado y listo para subir.")
                 os.remove(ruta_archivo)
                 logging.info(f"Archivo {archivo} eliminado.")
-
         if puntos:
-            client.write_points(puntos)
-            logging.info(f"Se insertaron {len(puntos)} registros en InfluxDB.")
+            client.write_points(puntos)  # 🔹 Se suben todas las inserciones con el mismo timestamp
+            logging.info(f"Se insertaron {len(puntos)} registros en InfluxDB con timestamp {timestamp_actual}.")
         else:
             logging.warning("No hay datos para insertar en InfluxDB.")
     except Exception as e:
