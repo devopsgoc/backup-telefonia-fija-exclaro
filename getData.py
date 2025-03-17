@@ -147,7 +147,7 @@ def procesar_y_subir_archivos_influxdb(client):
                                 Point("backup_data")
                                 .field("campo2", segunda_columna)
                                 .field("campo3", tercera_columna_value)
-                                .time(timestamp_actual, WritePrecision.NS)
+                                .time(timestamp_actual)
                             )
                             puntos.append(point)  # Agregar punto a la lista
 
