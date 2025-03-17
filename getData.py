@@ -105,10 +105,13 @@ import os
 import logging
 from datetime import datetime, timezone
 
-def procesar_y_subir_archivos_influxdb(client):
+def procesar_y_subir_archivos_influxdb(client, local_path):
     try:
         puntos = []
-        timestamp_actual = int(datetime.now(timezone.utc).timestamp() * 1e9)  
+        
+        # 🔹 Generamos un solo timestamp para TODAS las inserciones (una sola marca de tiempo para todo el proceso)
+        timestamp_global = int(datetime.now(timezone.utc).timestamp() * 1e9)  
+
         for archivo in os.listdir(local_path):
             ruta_archivo = os.path.join(local_path, archivo)
             if os.path.isfile(ruta_archivo):
@@ -124,9 +127,11 @@ def procesar_y_subir_archivos_influxdb(client):
 
                             punto = {
                                 "measurement": "backup_data",
-                                "time": timestamp_actual,  # 🔹 Todas las inserciones usan el mismo timestamp
+                                "time": timestamp_global,  # 🔹 Todas las inserciones tienen el mismo timestamp
+                                "tags": {  
+                                    "kpi": kpi
+                                },
                                 "fields": {
-                                    "kpi": kpi,
                                     "estado": estado
                                 }
                             }
@@ -135,11 +140,13 @@ def procesar_y_subir_archivos_influxdb(client):
                 logging.info(f"Archivo {archivo} procesado y listo para subir.")
                 os.remove(ruta_archivo)
                 logging.info(f"Archivo {archivo} eliminado.")
+
         if puntos:
             client.write_points(puntos)  # 🔹 Se suben todas las inserciones con el mismo timestamp
-            logging.info(f"Se insertaron {len(puntos)} registros en InfluxDB con timestamp {timestamp_actual}.")
+            logging.info(f"Se insertaron {len(puntos)} registros en InfluxDB con timestamp {timestamp_global}.")
         else:
             logging.warning("No hay datos para insertar en InfluxDB.")
+    
     except Exception as e:
         logging.error(f"Error al procesar archivos e insertar en InfluxDB: {e}")
         raise
