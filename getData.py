@@ -115,10 +115,13 @@ def conectar_influxdb():
         logging.error(f"Error al conectar a InfluxDB: {e}")
         raise
 
-
 def procesar_y_subir_archivos_influxdb(client):
     try:
-        write_api = client.write_api(write_options=SYNCHRONOUS)  # <-- Aquí corregido
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+        puntos = []  # Lista para almacenar todos los puntos
+
+        # Generar un único timestamp para todos los registros
+        timestamp_actual = datetime.now(timezone.utc)
 
         for archivo in os.listdir(local_path):
             ruta_archivo = os.path.join(local_path, archivo)
@@ -139,20 +142,24 @@ def procesar_y_subir_archivos_influxdb(client):
                             else:
                                 tercera_columna_value = 0
 
-                            # Crear el punto para InfluxDB
+                            # Crear el punto para InfluxDB con el mismo timestamp
                             point = (
                                 Point("backup_data")
                                 .field("campo2", segunda_columna)
-                                .field("campo3", tercera_columna_value)  # Cambiado para usar el valor convertido
-                                .time(datetime.now(timezone.utc), WritePrecision.NS)  # Aquí está la corrección
+                                .field("campo3", tercera_columna_value)
+                                .time(timestamp_actual, WritePrecision.NS)
                             )
-                            write_api.write(bucket=influx_bucket, record=point)
+                            puntos.append(point)  # Agregar punto a la lista
 
-                logging.info(f"Archivo {archivo} procesado e insertado en InfluxDB.")
+                logging.info(f"Archivo {archivo} procesado y puntos listos para insertar.")
                 os.remove(ruta_archivo)
                 logging.info(f"Archivo {archivo} eliminado del directorio local.")
         
-        logging.info("Datos enviados correctamente a InfluxDB.")
+        if puntos:  # Solo insertar si hay puntos
+            write_api.write(bucket=influx_bucket, record=puntos)
+            logging.info(f"Se insertaron {len(puntos)} registros en InfluxDB de una sola vez con timestamp: {timestamp_actual}.")
+        else:
+            logging.warning("No hay datos para insertar en InfluxDB.")
 
     except Exception as e:
         logging.error(f"Error al procesar archivos e insertar en InfluxDB: {e}")
