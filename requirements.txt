@@ -1,3 +1,3 @@
 paramiko
-influxdb
+influxdb-client
 apscheduler
