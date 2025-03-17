@@ -52,7 +52,7 @@ def crear_local_path():
 def conectar_sftp():
     try:
         logging.info("Conectando al servidor SFTP con ssh-rsa forzado...")
-        transport = paramiko.Transport((sftp_host, sftp_port))
+        transport = paramiko.Transport((sftp_host, int(sftp_port)))
         transport.connect(username=sftp_user, password=sftp_password)
         key = transport.get_remote_server_key()
         if key.get_name() != 'ssh-rsa':
